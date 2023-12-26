@@ -1,0 +1,151 @@
+---
+title: "global"
+author: "Qin Huang"
+date: "2023-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+library(magick)
+library(gplots)
+# 读取并转换图像
+
+# 局部平均池化函数
+local_avg_pooling <- function(image_matrix, pool_size = c(2, 2), stride = c(2, 2)) {
+  # 初始化输出矩阵
+  output_rows <- ceiling((dim(image_matrix)[1] - pool_size[1]) / stride[1]) + 1
+  output_cols <- ceiling((dim(image_matrix)[2] - pool_size[2]) / stride[2]) + 1
+  output_matrix <- matrix(0, nrow = output_rows, ncol = output_cols)
+  
+  # 应用局部平均池化
+  for (i in seq(1, dim(image_matrix)[1] - pool_size[1] + 1, stride[1])) {
+    for (j in seq(1, dim(image_matrix)[2] - pool_size[2] + 1, stride[2])) {
+      window <- image_matrix[i:(i + pool_size[1] - 1), j:(j + pool_size[2] - 1)]
+      output_matrix[ceiling(i / stride[1]), ceiling(j / stride[2])] <- mean(window)
+    }
+  }
+  
+  return(output_matrix)
+}
+
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+remove_background <- function(image_matrix, threshold_rate = 0.5) {
+  # Assuming image_matrix is your grayscale image matrix
+  
+  # Thresholding: Set pixels below the threshold to 0 (background)
+  image_matrix[image_matrix <= threshold_rate*max(image_matrix)] <- 0
+  
+  return(image_matrix)
+}
+
+library(magrittr)
+
+# Function to calculate the gradient using a 3x3 kernel
+calculate_gradient <- function(image_matrix) {
+  # Create a 3x3 kernel for gradient calculation
+  kernel <- matrix(c(-1, -1, -1, -1, 8, -1, -1, -1, -1), nrow = 3, ncol = 3)
+
+  # Convolve the image matrix with the kernel
+  gradient_image <- matrix(0, nrow = nrow(image_matrix), ncol = ncol(image_matrix))
+  for (i in 2:(nrow(image_matrix) - 1)) {
+    for (j in 2:(ncol(image_matrix) - 1)) {
+      # Extract the 3x3 region centered at (i, j)
+      neighborhood <- image_matrix[(i - 1):(i + 1), (j - 1):(j + 1)]
+      # Convolve the neighborhood with the kernel and take the maximum value
+      gradient_image[i, j] <- max(0, sum(neighborhood * kernel))
+    }
+  }
+
+  # Return the gradient matrix
+  return(gradient_image)
+}
+
+
+```
+
+```{r}
+processing <- function (pca1,pca2,sample)
+{
+  # Construct file paths
+file_path1 <- sprintf("./reconstructed_%d/reconstructed_%d.png", pca1, sample)
+file_path2 <- sprintf("./reconstructed_%d/reconstructed_%d.png", pca2, sample)
+
+image1 <- image_read(file_path1)
+image2 <- image_read(file_path2)
+image_matrix1 <- as.integer(image_data(image1))
+image_matrix2 <- as.integer(image_data(image2))
+image_matrix1 <- matrix(image_matrix1, nrow = 28, ncol = 28)
+image_matrix2 <- matrix(image_matrix2, nrow = 28, ncol = 28)
+
+gradient_result_1 <- calculate_gradient(image_matrix1)
+gradient_result_2 <- calculate_gradient(image_matrix2)
+
+# 应用函数并查看结果
+pooled_matrix1 <- local_avg_pooling(image_matrix1, pool_size = c(2, 2), stride = c(2, 2))
+pooled_matrix2 <- local_avg_pooling(image_matrix2, pool_size = c(2, 2), stride = c(2, 2))
+
+aft_pooled_matrix1 <-remove_background(pooled_matrix1)
+
+aft_pooled_matrix2 <-remove_background(pooled_matrix2)
+
+
+norm_matrix1 <- normalize(aft_pooled_matrix1)
+norm_matrix2 <- normalize(aft_pooled_matrix2)
+
+norm_gradient1 <- normalize(gradient_result_1)
+norm_gradient2 <- normalize(gradient_result_2)
+
+heatmap((norm_matrix1), 
+        Colv = NA, 
+        Rowv = NA, 
+        col = colorRampPalette(c("blue", "white", "red"))(100), 
+        scale = "none",
+        main = "Matrix Heatmap")
+heatmap((gradient_result_1),
+        Colv = NA,
+        Rowv = NA,
+        col = colorRampPalette(c("blue", "white", "red"))(100),
+        scale = "none",
+        main = "Matrix Heatmap")
+similarity_matrix <- 1 - abs(norm_matrix1 - norm_matrix2) / abs(norm_matrix1 + norm_matrix2)
+
+gradient_similarity <- 1 - abs(norm_gradient1 - norm_gradient2) / abs(norm_gradient1 + norm_gradient2)
+
+similarity_matrix[is.nan(similarity_matrix)] <- 1
+
+gradient_similarity[is.nan(gradient_similarity)] <- 1
+
+# Construct the output file name
+output_file <- paste("SIM-", pca1, "-", pca2, "-", sample, ".csv", sep = "")
+output_file2 <- paste("GRAD-", pca1, "-", pca2, "-", sample, ".csv", sep = "")
+
+# Write the similarity matrix to the CSV file
+write.csv(similarity_matrix, file = output_file, row.names = FALSE)
+write.csv(gradient_similarity, file = output_file2, row.names = FALSE)
+
+# 显示相似度
+return (c(mean(mean(similarity_matrix)),mean(mean(gradient_similarity))))
+
+}
+```
+
+```{r}
+values_for_i <- c(2, 3, 5, 10, 20, 40, 50, 60, 80, 100, 120, 140, 150, 160, 180, 200, 250, 300, 310, 320, 330, 340, 350)
+results_table <- data.frame(values_for_i = numeric(0), result = numeric(0))
+
+# Loop through the specified values for i
+for (i in values_for_i) {
+  result<- processing(i,350,1)
+  results_table <- rbind(results_table, c(i, result))
+}
+
+write.csv(results_table, "SI_result.csv", row.names = FALSE)
+```

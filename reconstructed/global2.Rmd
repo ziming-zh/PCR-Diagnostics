@@ -1,0 +1,64 @@
+---
+title: "global"
+author: "Qin Huang"
+date: "2023-12-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+library(magick)
+
+# 读取并转换图像
+image1 <- image_read("./reconstructed_2/reconstructed_1.png")
+image2 <- image_read("./reconstructed_10/reconstructed_1.png")
+image_matrix1 <- as.integer(image_data(image1))
+image_matrix2 <- as.integer(image_data(image2))
+image_matrix1 <- matrix(image_matrix1, nrow = 28, ncol = 28)
+image_matrix2 <- matrix(image_matrix2, nrow = 28, ncol = 28)
+
+# 局部平均池化函数
+local_avg_pooling <- function(image_matrix, pool_size = c(2, 2), stride = c(2, 2)) {
+  # 初始化输出矩阵
+  output_rows <- ceiling((dim(image_matrix)[1] - pool_size[1]) / stride[1]) + 1
+  output_cols <- ceiling((dim(image_matrix)[2] - pool_size[2]) / stride[2]) + 1
+  output_matrix <- matrix(0, nrow = output_rows, ncol = output_cols)
+  
+  # 应用局部平均池化
+  for (i in seq(1, dim(image_matrix)[1] - pool_size[1] + 1, stride[1])) {
+    for (j in seq(1, dim(image_matrix)[2] - pool_size[2] + 1, stride[2])) {
+      window <- image_matrix[i:(i + pool_size[1] - 1), j:(j + pool_size[2] - 1)]
+      output_matrix[ceiling(i / stride[1]), ceiling(j / stride[2])] <- mean(window)
+    }
+  }
+  
+  return(output_matrix)
+}
+
+# 应用函数并查看结果
+pooled_matrix1 <- local_avg_pooling(image_matrix1, pool_size = c(2, 2), stride = c(2, 2))
+pooled_matrix2 <- local_avg_pooling(image_matrix2, pool_size = c(2, 2), stride = c(2, 2))
+
+```
+
+```{r}
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+norm_matrix1 <- normalize(pooled_matrix1)
+norm_matrix2 <- normalize(pooled_matrix2)
+
+# 计算范数
+similarity_matrix <- 1 - abs(norm_matrix1 - norm_matrix2) / abs(norm_matrix1 + norm_matrix2)
+
+# 处理分母为0的情况
+similarity_matrix[is.nan(similarity_matrix)] <- 0
+
+# 显示相似度
+similarity_matrix
+```

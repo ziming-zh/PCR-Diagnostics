@@ -1,0 +1,73 @@
+---
+title: "model-analysis"
+output: html_document
+date: "2023-12-17"
+---
+
+```{r setup, include=FALSE}
+library(MASS)  # For mvrnorm function
+library(ggplot2)  # For data visualization
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+epoch_num<- 1
+file_path <- paste("df9_epoch_", epoch_num, ".csv", sep = "")
+# Load the data
+df <- read.csv(file_path)
+
+# Assuming alpha = beta
+alpha_init <- 0.5
+beta_init <- 0.5
+
+# EM algorithm for estimating parameters of symmetric beta distribution
+em_algorithm <- function(data, alpha_init, beta_init, max_iter = 100, tol = 1e-6) {
+  alpha <- alpha_init
+  beta <- beta_init
+  
+  for (iter in 1:max_iter) {
+    # E-step
+    gamma <- alpha + beta
+    weights <- alpha / gamma
+    
+    # M-step
+    alpha_new <- sum(weights * log(data)) / sum(weights)
+    beta_new <- sum((1 - weights) * log(1 - data)) / sum(1 - weights)
+    
+    # Check for convergence
+    if (abs(alpha_new - alpha) < tol && abs(beta_new - beta) < tol) {
+      break
+    }
+    
+    # Update parameters
+    alpha <- alpha_new
+    beta <- beta_new
+  }
+  
+  return(c(alpha = alpha, beta = beta))
+}
+
+# Extract the "pred_prob" column from the data
+pred_probs <- df$pred_prob
+
+# Run the EM algorithm
+estimated_params <- em_algorithm(pred_probs, alpha_init, beta_init)
+
+
+cat("Estimated Parameters:\n")
+cat("Alpha:", estimated_params["alpha"], "\n")
+cat("Beta:", estimated_params["beta"], "\n")
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

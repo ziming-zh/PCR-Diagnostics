@@ -1,0 +1,150 @@
+---
+title: "AIC-fitting"
+output: html_document
+date: "2023-12-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+# Given data
+X <- c(1, 2, 3, 5, 10, 20, 40, 50, 60, 80, 100, 120, 140, 150, 160, 180, 200, 250, 300, 350, 400)
+digit2 <- c(0.01120522, 0.09697956, 0.09532124, 0.16821342, 0.27177743, 0.32420494, 0.33910687, 0.33657551, 0.33771291, 0.36778342, 0.36772089, 0.36745891, 0.34744667, 0.34532044, 0.34020683, 0.34124249, 0.38700963, 0.37627271, 0.3701806, 0.43198397, 0.30868274)
+digit5 <- c(0.001930878, 0.012737538, 0.021012433, 0.022746338, 0.099289778, 0.1275504, 0.252053455, 0.264820076, 0.259487175, 0.254040882, 0.262518782, 0.258709686, 0.284034492, 0.272544915, 0.267659522, 0.265242819, 0.286905569, 0.287984333, 0.311303293, 0.307980218, 0.442069587)
+digit8 <- c(0.000745214, 0.017607983, 0.017994846, 0.112169939, 0.176488357, 0.281014002, 0.293618268, 0.301097323, 0.311842602, 0.305552539, 0.291536689, 0.272343082, 0.271367618, 0.259434569, 0.27183924, 0.251736312, 0.264292312, 0.299639731, 0.316108502, 0.273494082, 0.255588077)
+digit9 <- c(-0.002230677, -0.004234515, 0.19342019, 0.227521325, 0.247611342, 0.278979154, 0.360332347, 0.368029943, 0.37621839, 0.37086476, 0.384186777, 0.384300439, 0.378056935, 0.384981162, 0.372842959, 0.365222318, 0.351950274, 0.314877488, 0.315863621, 0.366880165, 0.301071188)
+
+# Create a data frame
+data <- data.frame(X, digit2, digit5, digit8, digit9)
+
+# Fit cubic polynomial for each digit
+fit_digit2 <- lm(digit2 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit5 <- lm(digit5 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit8 <- lm(digit8 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit9 <- lm(digit9 ~ poly(X, 3, raw = TRUE), data = data)
+
+# Print the fitted models
+summary(fit_digit2)
+summary(fit_digit5)
+summary(fit_digit8)
+summary(fit_digit9)
+
+```
+```{r}
+# Given data
+X <- c(1, 2, 3, 5, 10, 20, 40, 50, 60, 80, 100, 120, 140, 150, 160, 180, 200, 250, 300, 350, 400)
+digit2 <- c(254.44287, 218.14195, 219.88743, 187.33714, 137.58116, 116.46691, 125.66597, 135.97621, 143.69273, 140.41131, 154.75609, 167.5162, 190.94826, 196.77398, 203.85206, 208.93658, 181.9526, 177.32444, 127.32031, -64.25102, -619.92353)
+digit5 <- c(247.3823, 243.2059, 240.2004, 241.3371, 207.5037, 202.0123, 147.4749, 148.2245, 160.3206, 180.2816, 190.1071, 206.4487, 202.3135, 215.4368, 223.7246, 234.0282, 226.3488, 229.9257, 194.1281, 135.497, -112.0115)
+
+digit8 <- c(237.71282, 230.19812, 230.99413, 182.56582, 149.87798, 91.67913, 101.51089, 105.17508, 106.16639, 127.4016, 152.93774, 180.59083, 194.15375, 208.15085, 205.16887, 228.38116, 227.54612, 211.43177, 187.45994, 173.00436, 80.76509)
+
+digit9 <- c(254.05091, 255.94012, 158.7405, 141.36502, 134.46285, 125.01394, 89.88877, 93.3201, 96.04823, 116.10464, 121.4117, 134.73366, 150.97936, 151.12792, 164.5397, 177.58994, 191.9788, 215.57045, 183.76368, 62.80149, -117.50055)
+
+
+# Create a data frame
+data <- data.frame(X, digit2, digit5, digit8, digit9)
+
+# Fit cubic polynomial for each digit
+fit_digit2 <- lm(digit2 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit5 <- lm(digit5 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit8 <- lm(digit8 ~ poly(X, 3, raw = TRUE), data = data)
+fit_digit9 <- lm(digit9 ~ poly(X, 3, raw = TRUE), data = data)
+
+# Print the fitted models
+summary(fit_digit2)
+summary(fit_digit5)
+summary(fit_digit8)
+summary(fit_digit9)
+
+# Extract summary information
+summary_info <- data.frame(
+  digit = c("digit2", "digit5", "digit8", "digit9"),
+  coefficients = c(coef(fit_digit2), coef(fit_digit5), coef(fit_digit8), coef(fit_digit9)),
+  std_errors = c(summary(fit_digit2)$coefficients[, "Std. Error"],
+                 summary(fit_digit5)$coefficients[, "Std. Error"],
+                 summary(fit_digit8)$coefficients[, "Std. Error"],
+                 summary(fit_digit9)$coefficients[, "Std. Error"]),
+  t_values = c(summary(fit_digit2)$coefficients[, "t value"],
+               summary(fit_digit5)$coefficients[, "t value"],
+               summary(fit_digit8)$coefficients[, "t value"],
+               summary(fit_digit9)$coefficients[, "t value"]),
+  p_values = c(summary(fit_digit2)$coefficients[, "Pr(>|t|)"],
+               summary(fit_digit5)$coefficients[, "Pr(>|t|)"],
+               summary(fit_digit8)$coefficients[, "Pr(>|t|)"],
+               summary(fit_digit9)$coefficients[, "Pr(>|t|)"])
+)
+
+# Save the summary information to a CSV file
+write.csv(summary_info, file = "summary_info.csv", row.names = FALSE)
+
+```
+
+
+
+## For Digit 9
+
+
+
+```{r}
+digit9 <- c( 255.94012, 158.7405, 141.36502, 134.46285, 125.01394, 89.88877, 93.3201, 96.04823, 116.10464, 121.4117, 134.73366, 150.97936, 151.12792, 164.5397, 177.58994, 191.9788, 215.57045, 183.76368,161.32161  ,164.54871,  139.49023,  117.53398, 62.80149)
+
+global_si <-c(0.833652565,
+0.833545668,
+0.877806956,
+0.897348799,
+0.92733365,
+0.960041536,
+0.981483028,
+0.983254574,
+0.979885949,
+0.985394386,
+0.985288358,
+0.986123335,
+0.986794004,
+0.986722884,
+0.987246267,
+0.987266085,
+0.993643895,
+0.994367324,
+0.999586077,
+0.99959099,
+0.999732676,
+0.999878384,
+1
+)
+
+local_si <-c(
+0.599520937,
+0.599736241,
+0.602394372,
+0.605288035,
+0.593071498,
+0.61181137,
+0.612119256,
+0.625717405,
+0.602292922,
+0.616386523,
+0.637995687,
+0.610213005,
+0.619463868,
+0.640510282,
+0.625367292,
+0.630504484,
+0.661302683,
+0.702826354,
+0.749049053,
+0.757161188,
+0.819817829,
+0.847405486,
+1
+)
+
+model<- lm(digit9~global_si^2+local_si^2)
+summary(model)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
