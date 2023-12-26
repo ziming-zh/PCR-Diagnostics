@@ -4,7 +4,7 @@
 
 ```mermaid
 graph TD;
-  A[Data Collections /from Neural Network Prediction/] -->|Raw Data| B[PCA /Feature Extraction from Images/];
+  A[Data Collections *from Neural Network Prediction*] -->|Raw Data| B[PCA *Feature Extraction from Images*];
   B -->|Feature Vectors| C[Regression];
   C -->|Predicted Values| D[Feature-based Analysis];
   D -->|Insights| E[Model-based Analysis];
